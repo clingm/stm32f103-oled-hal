@@ -10,7 +10,8 @@
 
 #include "oled.h"
 #include "stdlib.h"
-#include "oledfont.h"  	 
+#include "oledfont.h" 
+#include "math.h" 	 
 
 
 void IIC_Start(void)
@@ -172,7 +173,7 @@ void OLED_Set_Pos(unsigned char x, unsigned char y)
 //开启OLED显示  
 void OLED_Display_On(void)
 {
-	OLED_WR_Byte(0X8D,OLED_CMD);  //SET DCDC����
+	OLED_WR_Byte(0X8D,OLED_CMD);  //SET DCDC
 	OLED_WR_Byte(0X14,OLED_CMD);  //DCDC ON
 	OLED_WR_Byte(0XAF,OLED_CMD);  //DISPLAY ON
 }
@@ -193,7 +194,7 @@ void OLED_Clear(void)
 		OLED_WR_Byte (0x00,OLED_CMD);       //设置显示位置—列低地址
 		OLED_WR_Byte (0x10,OLED_CMD);       //设置显示位置—列高地址  
 		for(n=0;n<128;n++)OLED_WR_Byte(0,OLED_DATA); 
-	} //������ʾ
+	}
 }
 void OLED_On(void)  
 {  
@@ -204,7 +205,7 @@ void OLED_On(void)
 		OLED_WR_Byte (0x00,OLED_CMD);      //设置显示位置—列低地址
 		OLED_WR_Byte (0x10,OLED_CMD);      //设置显示位置—列高地址   
 		for(n=0;n<128;n++)OLED_WR_Byte(1,OLED_DATA); 
-	} //������ʾ
+	} 
 }
 //在指定位置显示一个字符,包括部分字符
 //x:0~127
@@ -217,20 +218,21 @@ void OLED_ShowChar(uint8_t x,uint8_t y,uint8_t chr,uint8_t Char_Size)
 		c=chr-' ';//�õ�ƫ�ƺ��ֵ			
 		if(x>Max_Column-1){x=0;y=y+2;}
 		if(Char_Size ==16)
-			{
+		{
 			OLED_Set_Pos(x,y);	
 			for(i=0;i<8;i++)
 			OLED_WR_Byte(F8X16[c*16+i],OLED_DATA);
 			OLED_Set_Pos(x,y+1);
 			for(i=0;i<8;i++)
 			OLED_WR_Byte(F8X16[c*16+i+8],OLED_DATA);
-			}
-			else {	
-				OLED_Set_Pos(x,y);
-				for(i=0;i<6;i++)
-				OLED_WR_Byte(F6x8[c][i],OLED_DATA);
+		}
+		else 
+		{	
+			OLED_Set_Pos(x,y);
+			for(i=0;i<6;i++)
+			OLED_WR_Byte(F6x8[c][i],OLED_DATA);
 				
-			}
+		}
 }
 //m^n函数
 uint32_t oled_pow(uint8_t m,uint8_t n)
@@ -292,6 +294,43 @@ void OLED_ShowCHinese(uint8_t x,uint8_t y,uint8_t no)
 				adder+=1;
       }					
 }
+
+uint8_t getlength(uint8_t num)
+{
+	int i = 0;
+	while(num > 0)
+	{
+		i++;
+		num /= 10; 
+	}
+	return i;
+}
+
+//x,y分别为列、横坐标, num为浮点数，len为预留小数部分的长度
+void OLED_ShowFloat(uint8_t x,uint8_t y,float num, uint8_t len, uint8_t Size)
+{
+	uint8_t i = 0;
+	uint8_t len_a = 0; //整数部分的长度
+	uint8_t a = (int)num; //整数部分
+	float_t b = num - a;  //小数部分
+	len_a = getlength(a);
+	uint8_t num_s[10];
+	for(i = 0; i <= len + len_a; ++i)
+	{
+		if(i < len_a){
+			num_s[len_a - i - 1] = '0' + a % 10;
+			a /= 10;
+		}else if(i == len_a) num_s[i] = '.';
+		else{
+			num_s[i] = '0' + b * 10;
+			b = b*10 - (int)(b*10);
+		}
+	}
+	num_s[i] = '\0';
+	OLED_ShowString(x, y, num_s, Size);
+}
+
+
 /***********功能描述：显示显示BMP图片128×64起始点坐标(x,y),x的范围0～127，y为页的范围0～7*****************/
 void OLED_DrawBMP(unsigned char x0, unsigned char y0,unsigned char x1, unsigned char y1,unsigned char BMP[])
 { 	
